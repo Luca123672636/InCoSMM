@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}O'quvchilarni import qilish{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">O'quvchilarni import qilish</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-4">O'quvchilar ro'yxatini Excel yoki CSV formatidagi fayldan import qilish uchun faylni tanlang.</p>
+                    
+                    <div class="alert alert-info mb-4">
+                        <h6 class="alert-heading">Fayl formati</h6>
+                        <p class="mb-2">Fayl quyidagi ustunlarni o'z ichiga olishi kerak:</p>
+                        <ul class="mb-0">
+                            <li>username - Foydalanuvchi nomi</li>
+                            <li>email - Email manzil</li>
+                            <li>first_name - Ism</li>
+                            <li>last_name - Familiya</li>
+                            <li>student_id - O'quvchi ID raqami (ixtiyoriy)</li>
+                            <li>date_of_birth - Tug'ilgan sana (yyyy-mm-dd formatida, ixtiyoriy)</li>
+                            <li>phone_number - Telefon raqami (ixtiyoriy)</li>
+                            <li>telegram_id - Telegram ID (ixtiyoriy)</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="POST" enctype="multipart/form-data" action="{{ url_for('import_students') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            {{ form.file.label(class="form-label") }}
+                            {{ form.file(class="form-control") }}
+                            {% if form.file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.file.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Excel (.xlsx) yoki CSV (.csv) formatidagi fayl</div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('manage_users') }}" class="btn btn-secondary">Bekor qilish</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Namuna fayl yuklab olish</h5>
+                </div>
+                <div class="card-body">
+                    <p>Namuna fayl formati bilan tanishish uchun quyidagi havoladan yuklab oling:</p>
+                    <a href="{{ url_for('static', filename='files/students_import_template.xlsx') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-download me-2"></i> Excel namunasini yuklab olish
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
