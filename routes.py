@@ -160,7 +160,7 @@ def admin_dashboard():
         Class.name,
         func.count(AttendanceRecord.id).label('attendance_count'),
         func.sum(case((AttendanceRecord.status == 'present', 1), else_=0)).label('present_count')
-    ).join(ClassSession).join(AttendanceRecord).group_by(Class.id).all()
+    ).select_from(Class).join(ClassSession, Class.id == ClassSession.class_id).join(AttendanceRecord, ClassSession.id == AttendanceRecord.session_id).group_by(Class.id).all()
     
     # Convert to percentage
     attendance_data = []
