@@ -131,6 +131,12 @@ class ClassForm(FlaskForm):
 class StudentProfileForm(FlaskForm):
     student_id = StringField('O\'quvchi ID', validators=[DataRequired(message="O'quvchi ID raqamini kiriting")])
     date_of_birth = DateField('Tug\'ilgan sana', validators=[DataRequired(message="Tug'ilgan sanani kiriting")])
+    class_id = SelectField('Sinf', coerce=int, validators=[Optional()])
+    enrollment_status = SelectField('A\'zolik holati', choices=[
+        ('active', 'Faol'),
+        ('completed', 'Tugatilgan'),
+        ('dropped', 'Tark etilgan')
+    ], default='active')
     submit = SubmitField('Saqlash')
 
 

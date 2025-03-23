@@ -287,7 +287,13 @@ def add_student_profile(user_id):
     user = User.query.get_or_404(user_id)
     form = StudentProfileForm()
     
+    # Populate class choices
+    classes = Class.query.filter_by(is_active=True).all()
+    class_choices = [(0, 'Sinfga a\'zo qilmaslik')] + [(c.id, c.name) for c in classes]
+    form.class_id.choices = class_choices
+    
     if form.validate_on_submit():
+        # Create student profile
         profile = StudentProfile(
             user_id=user.id,
             student_id=form.student_id.data,
@@ -297,8 +303,30 @@ def add_student_profile(user_id):
         db.session.add(profile)
         db.session.commit()
         
-        create_audit_log(current_user.id, 'create_student_profile', f'O\'quvchi profili yaratildi: {user.username}', request.remote_addr)
-        flash('O\'quvchi profili muvaffaqiyatli yaratildi.', 'success')
+        # Enroll in class if selected
+        if form.class_id.data and form.class_id.data > 0:
+            enrollment = Enrollment(
+                student_profile_id=profile.id,
+                class_id=form.class_id.data,
+                status=form.enrollment_status.data
+            )
+            
+            db.session.add(enrollment)
+            db.session.commit()
+            
+            # Get class name for the audit log
+            class_name = Class.query.get(form.class_id.data).name
+            create_audit_log(
+                current_user.id,
+                'create_enrollment',
+                f'O\'quvchi sinfga qo\'shildi: {user.username} -> {class_name}',
+                request.remote_addr
+            )
+            flash(f'O\'quvchi profili yaratildi va {class_name} sinfiga qo\'shildi.', 'success')
+        else:
+            create_audit_log(current_user.id, 'create_student_profile', f'O\'quvchi profili yaratildi: {user.username}', request.remote_addr)
+            flash('O\'quvchi profili muvaffaqiyatli yaratildi.', 'success')
+        
         return redirect(url_for('manage_users'))
     
     return render_template('admin/add_student_profile.html', form=form, user=user)
