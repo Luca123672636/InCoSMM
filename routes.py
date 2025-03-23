@@ -10,7 +10,7 @@ from flask import (
 )
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, case
 
 from app import app, db
 from models import (
