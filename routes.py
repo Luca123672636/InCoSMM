@@ -932,7 +932,7 @@ def teacher_attendance(class_id):
             attendance_data[student_name][record.status] += 1
     
     return render_template(
-        'teacher/attendance.html',
+        'teacher/attendance_new.html',
         class_obj=class_obj,
         enrollments=enrollments,
         sessions=sessions,
@@ -1015,7 +1015,7 @@ def mark_attendance(session_id):
         return redirect(url_for('teacher_attendance', class_id=class_obj.id))
     
     return render_template(
-        'teacher/mark_attendance.html',
+        'teacher/mark_attendance_new.html',
         form=form,
         record_forms=record_forms,
         session=session,

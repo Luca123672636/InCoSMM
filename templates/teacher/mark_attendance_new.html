@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Davomat belgilash - {{ session.date.strftime('%d.%m.%Y') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header with Session Info -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-2">{{ class_obj.name }}</h2>
+            <p class="text-muted">
+                <i class="fas fa-calendar me-1"></i> {{ session.date.strftime('%d.%m.%Y') }} |
+                <i class="fas fa-clock me-1"></i> {{ session.start_time.strftime('%H:%M') }} - {{ session.end_time.strftime('%H:%M') }}
+                {% if session.topic %}
+                | <i class="fas fa-book me-1"></i> {{ session.topic }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('teacher_attendance', class_id=class_obj.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Orqaga
+            </a>
+        </div>
+    </div>
+
+    <!-- Attendance Form -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i> Davomat belgilash
+                    </h5>
+                    <div>
+                        <span class="badge bg-success me-1">Qatnashdi</span>
+                        <span class="badge bg-danger me-1">Qatnashmadi</span>
+                        <span class="badge bg-warning me-1">Kechikdi</span>
+                        <span class="badge bg-info me-1">Sababli</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if enrollments %}
+                    <!-- Quick Actions -->
+                    <div class="mb-4">
+                        <div class="btn-group" role="group">
+                            <button id="selectAllPresent" type="button" class="btn btn-success">
+                                <i class="fas fa-check-circle me-1"></i> Hammasi qatnashdi
+                            </button>
+                            <button id="selectAllAbsent" type="button" class="btn btn-danger">
+                                <i class="fas fa-times-circle me-1"></i> Hammasi qatnashmadi
+                            </button>
+                            <button id="selectAllLate" type="button" class="btn btn-warning">
+                                <i class="fas fa-clock me-1"></i> Hammasi kechikdi
+                            </button>
+                            <button id="selectAllExcused" type="button" class="btn btn-info">
+                                <i class="fas fa-note-medical me-1"></i> Hammasi sababli
+                            </button>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('mark_attendance', session_id=session.id) }}">
+                        {{ form.hidden_tag() }}
+                        {{ form.session_id(value=session.id) }}
+                        
+                        <div class="table-responsive">
+                            <table id="attendanceTable" class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>O'quvchi</th>
+                                        <th>Status</th>
+                                        <th>Izoh</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for enrollment in enrollments %}
+                                    {% set student = enrollment.student.user %}
+                                    {% set record_form = record_forms[enrollment.id] %}
+                                    <tr>
+                                        <td class="align-middle">
+                                            <strong>{{ student.first_name }} {{ student.last_name }}</strong>
+                                        </td>
+                                        <td style="width: 200px;">
+                                            <select name="student_{{ enrollment.id }}-status" class="form-select attendance-status">
+                                                <option value="present" {% if record_form.status.data == "present" %}selected{% endif %}>Qatnashdi</option>
+                                                <option value="absent" {% if record_form.status.data == "absent" %}selected{% endif %}>Qatnashmadi</option>
+                                                <option value="late" {% if record_form.status.data == "late" %}selected{% endif %}>Kechikdi</option>
+                                                <option value="excused" {% if record_form.status.data == "excused" %}selected{% endif %}>Sababli</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <div class="input-group">
+                                                <input type="text" name="student_{{ enrollment.id }}-notes" class="form-control"
+                                                      value="{{ record_form.notes.data or '' }}" placeholder="Izoh (ixtiyoriy)">
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ url_for('teacher_attendance', class_id=class_obj.id) }}" class="btn btn-outline-secondary">
+                                Bekor qilish
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> Davomatni saqlash
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Bu sinfda o'quvchilar yo'q.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize attendance status styling
+    const statusSelects = document.querySelectorAll('.attendance-status');
+    statusSelects.forEach(select => {
+        updateStatusColor(select);
+        select.addEventListener('change', function() {
+            updateStatusColor(this);
+        });
+    });
+    
+    // Initialize "Select All" buttons
+    document.getElementById('selectAllPresent')?.addEventListener('click', function() {
+        setAllStatuses('present');
+    });
+    
+    document.getElementById('selectAllAbsent')?.addEventListener('click', function() {
+        setAllStatuses('absent');
+    });
+    
+    document.getElementById('selectAllLate')?.addEventListener('click', function() {
+        setAllStatuses('late');
+    });
+    
+    document.getElementById('selectAllExcused')?.addEventListener('click', function() {
+        setAllStatuses('excused');
+    });
+    
+    // Helper functions
+    function updateStatusColor(select) {
+        const row = select.closest('tr');
+        if (!row) return;
+        
+        // Remove all status classes
+        row.classList.remove('table-success', 'table-danger', 'table-warning', 'table-info');
+        
+        // Add new class based on selected status
+        switch (select.value) {
+            case 'present':
+                row.classList.add('table-success');
+                break;
+            case 'absent':
+                row.classList.add('table-danger');
+                break;
+            case 'late':
+                row.classList.add('table-warning');
+                break;
+            case 'excused':
+                row.classList.add('table-info');
+                break;
+        }
+    }
+    
+    function setAllStatuses(status) {
+        const statusSelects = document.querySelectorAll('.attendance-status');
+        statusSelects.forEach(select => {
+            select.value = status;
+            updateStatusColor(select);
+        });
+    }
+});
+</script>
+{% endblock %}
