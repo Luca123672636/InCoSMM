@@ -1,0 +1,176 @@
+/* 
+ * Custom styles for the Uzbek attendance tracker 
+ * Mostly enhancing Bootstrap's default styles
+ */
+
+/* Base styles */
+:root {
+  --primary-color: #0a58ca;
+  --secondary-color: #6c757d;
+  --header-bg: rgba(33, 37, 41, 0.03);
+  --accent-color: #1e88e5;
+}
+
+/* Layout */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+}
+
+/* Header and navigation */
+.app-header {
+  background-color: var(--header-bg);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-weight: 700;
+}
+
+/* Dashboard stats */
+.stat-card {
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.stat-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Attendance status colors */
+.status-present {
+  background-color: rgba(var(--bs-success-rgb), 0.15) !important;
+  border-color: var(--bs-success) !important;
+}
+
+.status-absent {
+  background-color: rgba(var(--bs-danger-rgb), 0.15) !important;
+  border-color: var(--bs-danger) !important;
+}
+
+.status-late {
+  background-color: rgba(var(--bs-warning-rgb), 0.15) !important;
+  border-color: var(--bs-warning) !important;
+}
+
+.status-excused {
+  background-color: rgba(var(--bs-info-rgb), 0.15) !important;
+  border-color: var(--bs-info) !important;
+}
+
+/* Table styles */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.datatable th {
+  white-space: nowrap;
+}
+
+/* Perfect attendance badge */
+.perfect-attendance-badge {
+  position: relative;
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(45deg, #ffeb3b, #ffc107);
+  color: #000;
+  border-radius: 2rem;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.perfect-attendance-badge::before {
+  content: '🏆';
+  margin-right: 0.5rem;
+}
+
+/* Student comment styles */
+.comment-card {
+  border-left: 4px solid var(--bs-primary);
+  transition: all 0.2s ease;
+}
+
+.comment-card:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.comment-rating {
+  font-size: 1.2rem;
+  color: #ffc107;
+}
+
+/* Form styles */
+.form-card {
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-label {
+  font-weight: 500;
+}
+
+/* Login page */
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--bs-light);
+}
+
+.login-card {
+  max-width: 450px;
+  width: 100%;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Charts and visualizations */
+.chart-container {
+  position: relative;
+  min-height: 300px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stat-card {
+    margin-bottom: 1rem;
+  }
+  
+  .login-card {
+    max-width: 90%;
+  }
+  
+  .chart-container {
+    min-height: 250px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .chart-container {
+    break-inside: avoid;
+  }
+  
+  body {
+    font-size: 12pt;
+  }
+  
+  .table th, .table td {
+    padding: 0.25rem 0.5rem;
+  }
+}

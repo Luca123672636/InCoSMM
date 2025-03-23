@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Yangi sinf{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-plus-circle me-2"></i> Yangi sinf qo'shish</h1>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('manage_classes') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Sinflarga qaytish
+            </a>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm form-card">
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('add_class') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {% if form.name.errors %}
+                                {{ form.name(class="form-control is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.name(class="form-control", placeholder="Sinf nomi") }}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {% if form.description.errors %}
+                                {{ form.description(class="form-control is-invalid", rows=3) }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.description(class="form-control", rows=3, placeholder="Sinf haqida qisqacha ma'lumot...") }}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.teacher_id.label(class="form-label") }}
+                                {% if form.teacher_id.errors %}
+                                    {{ form.teacher_id(class="form-select is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.teacher_id.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.teacher_id(class="form-select") }}
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.schedule.label(class="form-label") }}
+                                {% if form.schedule.errors %}
+                                    {{ form.schedule(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.schedule.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.schedule(class="form-control", placeholder="Misol: Du, Chor, Juma 14:00-15:30") }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.start_date.label(class="form-label") }}
+                                {% if form.start_date.errors %}
+                                    {{ form.start_date(class="form-control is-invalid", type="date") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.start_date.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.start_date(class="form-control", type="date") }}
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.end_date.label(class="form-label") }}
+                                {% if form.end_date.errors %}
+                                    {{ form.end_date(class="form-control is-invalid", type="date") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.end_date.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.end_date(class="form-control", type="date") }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 form-check form-switch">
+                            {{ form.is_active(class="form-check-input") }}
+                            {{ form.is_active.label(class="form-check-label") }}
+                            <div class="form-text">
+                                Faol sinflar uchun davomat belgish mumkin.
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo me-1"></i> Tozalash
+                            </button>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Set today as default for start_date if empty
+    document.addEventListener('DOMContentLoaded', function() {
+        const startDateInput = document.getElementById('start_date');
+        if (startDateInput && !startDateInput.value) {
+            const today = new Date().toISOString().split('T')[0];
+            startDateInput.value = today;
+            
+            // Set end date to 3 months later if empty
+            const endDateInput = document.getElementById('end_date');
+            if (endDateInput && !endDateInput.value) {
+                const endDate = new Date();
+                endDate.setMonth(endDate.getMonth() + 3);
+                endDateInput.value = endDate.toISOString().split('T')[0];
+            }
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

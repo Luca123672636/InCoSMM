@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}Ota-ona boshqaruv paneli{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4"><i class="fas fa-users me-2"></i> Ota-ona boshqaruv paneli</h1>
+        </div>
+    </div>
+    
+    <!-- Parent Info -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2 text-center">
+                            <i class="fas fa-user-circle fa-6x text-primary mb-3"></i>
+                        </div>
+                        <div class="col-md-10">
+                            <h3>{{ current_user.first_name }} {{ current_user.last_name }}</h3>
+                            <p>
+                                <span class="badge bg-info">{{ parent_profile.relationship|title }}</span>
+                                <span class="text-muted ms-2">
+                                    <i class="fas fa-envelope me-1"></i> {{ current_user.email }}
+                                    {% if current_user.phone_number %}
+                                    | <i class="fas fa-phone me-1"></i> {{ current_user.phone_number }}
+                                    {% endif %}
+                                </span>
+                            </p>
+                            <p class="mb-0">
+                                <i class="fas fa-child me-1"></i> Farzandlar soni: <strong>{{ student_data|length }}</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Children Cards -->
+    {% for data in student_data %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ data.student.first_name }} {{ data.student.last_name }}</h5>
+                    <a href="{{ url_for('parent_student_view', student_id=data.student.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye me-1"></i> Batafsil ko'rish
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Student Enrollments and Attendance -->
+                        <div class="col-md-7">
+                            <h6><i class="fas fa-graduation-cap me-2"></i> Sinflar</h6>
+                            
+                            {% if data.enrollments %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Sinf nomi</th>
+                                            <th>O'qituvchi</th>
+                                            <th>Jadval</th>
+                                            <th>Davomat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for enrollment in data.enrollments %}
+                                        <tr>
+                                            <td>{{ enrollment.class.name }}</td>
+                                            <td>{{ enrollment.class.teacher.first_name }} {{ enrollment.class.teacher.last_name }}</td>
+                                            <td>{{ enrollment.class.schedule }}</td>
+                                            <td>
+                                                {% for summary in data.attendance_summary %}
+                                                    {% if summary.class.id == enrollment.class.id %}
+                                                        <div class="progress" style="height: 8px;">
+                                                            <div class="progress-bar {{ 'bg-success' if summary.attendance_rate >= 90 else 
+                                                                                       'bg-primary' if summary.attendance_rate >= 75 else 
+                                                                                       'bg-warning' if summary.attendance_rate >= 50 else 
+                                                                                       'bg-danger' }}" 
+                                                                 role="progressbar" style="width: {{ summary.attendance_rate }}%" 
+                                                                 aria-valuenow="{{ summary.attendance_rate }}" aria-valuemin="0" aria-valuemax="100">
+                                                            </div>
+                                                        </div>
+                                                        <small>{{ summary.attendance_rate }}%</small>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> Hozirda farzandingiz birorta sinfga a'zo emas.
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Recent Teacher Comments -->
+                        <div class="col-md-5">
+                            <h6><i class="fas fa-comment-dots me-2"></i> So'nggi izohlar</h6>
+                            
+                            {% if data.comments %}
+                            <div class="list-group">
+                                {% for comment, class, teacher in data.comments %}
+                                <div class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ class.name }}</h6>
+                                        <small class="text-muted">{{ comment.comment_date.strftime('%d.%m.%Y') }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ comment.comment }}</p>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i> {{ teacher.first_name }} {{ teacher.last_name }}
+                                        </small>
+                                        {% if comment.rating %}
+                                        <div class="comment-rating">
+                                            {% for i in range(comment.rating|int) %}
+                                            <i class="fas fa-star"></i>
+                                            {% endfor %}
+                                            {% for i in range(5 - comment.rating|int) %}
+                                            <i class="far fa-star"></i>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> Hali izohlar mavjud emas.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Overall Attendance Stats -->
+                    {% if data.attendance_summary %}
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <h6><i class="fas fa-chart-pie me-2"></i> Umumiy davomat statistikasi</h6>
+                            
+                            <div class="row">
+                                {% for summary in data.attendance_summary %}
+                                <div class="col-md-3 mb-3">
+                                    <div class="card h-100 {{ 'border-success' if summary.attendance_rate >= 90 else 
+                                                             'border-primary' if summary.attendance_rate >= 75 else 
+                                                             'border-warning' if summary.attendance_rate >= 50 else 
+                                                             'border-danger' }}">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title">{{ summary.class.name }}</h6>
+                                            <div class="display-4 mb-1">{{ summary.attendance_rate }}%</div>
+                                            <div class="text-muted mb-2">
+                                                Qatnashdi: {{ summary.present_count }}/{{ summary.total_sessions }}
+                                            </div>
+                                            <div class="progress mb-2" style="height: 8px;">
+                                                <div class="progress-bar bg-success" role="progressbar" 
+                                                     style="width: {{ (summary.present_count / summary.total_sessions * 100) if summary.total_sessions > 0 else 0 }}%" 
+                                                     aria-valuenow="{{ summary.present_count }}" aria-valuemin="0" aria-valuemax="{{ summary.total_sessions }}">
+                                                </div>
+                                            </div>
+                                            <div class="small text-muted">
+                                                Kechikishlar: {{ summary.late_count }} |
+                                                Qatnashmasliklar: {{ summary.absent_count }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> Sizda hali farzandlar bog'lanmagan. Administrator bilan bog'laning.
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

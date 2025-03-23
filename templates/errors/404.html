@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Xatolik 404 - Sahifa topilmadi{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto text-center">
+            <div class="card shadow-sm">
+                <div class="card-body p-5">
+                    <h1 class="display-1 text-warning mb-4">404</h1>
+                    <h2 class="mb-4">Sahifa topilmadi</h2>
+                    <p class="lead mb-4">Kechirasiz, siz so'ragan sahifa topilmadi.</p>
+                    <p class="mb-5">Sahifa o'chirilgan, nomi o'zgartirilgan yoki vaqtincha mavjud emas bo'lishi mumkin.</p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">Bosh sahifaga qaytish</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

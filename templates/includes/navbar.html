@@ -1,0 +1,110 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark app-header">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('index') }}">
+            <i class="fas fa-user-graduate me-2"></i>
+            Davomat tizimi
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" 
+                aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.role == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'admin_dashboard' }}" href="{{ url_for('admin_dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i> Boshqaruv paneli
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'manage_users' }}" href="{{ url_for('manage_users') }}">
+                            <i class="fas fa-users me-1"></i> Foydalanuvchilar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'manage_classes' }}" href="{{ url_for('manage_classes') }}">
+                            <i class="fas fa-chalkboard me-1"></i> Sinflar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'reports' }}" href="{{ url_for('reports') }}">
+                            <i class="fas fa-chart-bar me-1"></i> Hisobotlar
+                        </a>
+                    </li>
+                    {% elif current_user.role == 'teacher' %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'teacher_dashboard' }}" href="{{ url_for('teacher_dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i> Boshqaruv paneli
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'teacher_classes' }}" href="{{ url_for('teacher_classes') }}">
+                            <i class="fas fa-chalkboard me-1"></i> Mening sinflarim
+                        </a>
+                    </li>
+                    {% elif current_user.role == 'student' %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'student_dashboard' }}" href="{{ url_for('student_dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i> Boshqaruv paneli
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'student_attendance' }}" href="{{ url_for('student_attendance') }}">
+                            <i class="fas fa-calendar-check me-1"></i> Mening davomatim
+                        </a>
+                    </li>
+                    {% elif current_user.role == 'parent' %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'parent_dashboard' }}" href="{{ url_for('parent_dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i> Boshqaruv paneli
+                        </a>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'index' }}" href="{{ url_for('index') }}">
+                        <i class="fas fa-home me-1"></i> Bosh sahifa
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <ul class="navbar-nav mb-2 mb-lg-0">
+                {% if current_user.is_authenticated %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle me-1"></i> {{ current_user.first_name }} {{ current_user.last_name }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                        <li class="dropdown-item text-muted">
+                            {% if current_user.role == 'admin' %}
+                            <i class="fas fa-user-shield me-1"></i> Administrator
+                            {% elif current_user.role == 'teacher' %}
+                            <i class="fas fa-chalkboard-teacher me-1"></i> O'qituvchi
+                            {% elif current_user.role == 'student' %}
+                            <i class="fas fa-user-graduate me-1"></i> O'quvchi
+                            {% elif current_user.role == 'parent' %}
+                            <i class="fas fa-users me-1"></i> Ota-ona
+                            {% endif %}
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog me-1"></i> Profil sozlamalari</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-key me-1"></i> Parolni o'zgartirish</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-1"></i> Chiqish</a></li>
+                    </ul>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'login' }}" href="{{ url_for('login') }}">
+                        <i class="fas fa-sign-in-alt me-1"></i> Kirish
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

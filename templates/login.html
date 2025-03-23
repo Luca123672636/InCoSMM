@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Tizimga kirish{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm form-card my-5">
+                <div class="card-body p-4 p-sm-5">
+                    <div class="text-center mb-4">
+                        <h1 class="h3">Tizimga kirish</h1>
+                        <p class="text-muted">Ta'lim markazida davomat tizimi</p>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('login') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.username.label(class="form-label") }}
+                            {% if form.username.errors %}
+                                {{ form.username(class="form-control is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.username.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.username(class="form-control", placeholder="Foydalanuvchi nomini kiriting") }}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            {{ form.password.label(class="form-label") }}
+                            {% if form.password.errors %}
+                                {{ form.password(class="form-control is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.password(class="form-control", placeholder="Parolingizni kiriting") }}
+                            {% endif %}
+                            <div class="form-text text-end">
+                                <a href="{{ url_for('reset_password_request') }}" class="small">Parolni unutdingizmi?</a>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4 form-check">
+                            {{ form.remember_me(class="form-check-input") }}
+                            {{ form.remember_me.label(class="form-check-label") }}
+                        </div>
+                        
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <p>Muammo bo'lsa, administrator bilan bog'laning</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

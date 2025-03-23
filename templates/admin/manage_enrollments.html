@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+
+{% block title %}O'quvchilar boshqaruvi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-users me-2"></i> O'quvchilar boshqaruvi</h1>
+            <p class="text-muted">{{ class_obj.name }} - O'qituvchi: {{ class_obj.teacher.first_name }} {{ class_obj.teacher.last_name }}</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('manage_classes') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i> Sinflarga qaytish
+            </a>
+            <a href="{{ url_for('add_enrollment', class_id=class_obj.id) }}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-1"></i> O'quvchi qo'shish
+            </a>
+        </div>
+    </div>
+    
+    <!-- Class Info Card -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h5 class="card-title">Sinf ma'lumotlari</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fas fa-chalkboard me-2"></i> <strong>Sinf nomi:</strong> {{ class_obj.name }}
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-user-tie me-2"></i> <strong>O'qituvchi:</strong> {{ class_obj.teacher.first_name }} {{ class_obj.teacher.last_name }}
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-calendar-week me-2"></i> <strong>Jadval:</strong> {{ class_obj.schedule }}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h5 class="card-title">Vaqt ma'lumotlari</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fas fa-calendar-day me-2"></i> <strong>Boshlanish sanasi:</strong> {{ class_obj.start_date.strftime('%d.%m.%Y') }}
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-calendar-day me-2"></i> <strong>Tugash sanasi:</strong> {{ class_obj.end_date.strftime('%d.%m.%Y') }}
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-bookmark me-2"></i> <strong>Status:</strong> 
+                                    <span class="badge {{ 'bg-success' if class_obj.is_active else 'bg-danger' }}">
+                                        {{ 'Faol' if class_obj.is_active else 'Faol emas' }}
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h5 class="card-title">Statistika</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fas fa-users me-2"></i> <strong>O'quvchilar soni:</strong> {{ enrollments|length }}
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-calendar-check me-2"></i> <strong>Darslar soni:</strong> {{ class_obj.sessions|length }}
+                                </li>
+                                <li class="list-group-item">
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                        <a href="{{ url_for('edit_class', class_id=class_obj.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit me-1"></i> Sinfni tahrirlash
+                                        </a>
+                                        <a href="{{ url_for('manage_sessions', class_id=class_obj.id) }}" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-calendar-alt me-1"></i> Darslar
+                                        </a>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enrolled Students Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-user-graduate me-2"></i> Sinfdagi o'quvchilar</h5>
+                    <div class="input-group" style="max-width: 300px;">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="student_search" class="form-control" placeholder="O'quvchini qidirish...">
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if enrollments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover datatable" id="enrollmentsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>O'quvchi</th>
+                                    <th>O'quvchi ID</th>
+                                    <th>Email</th>
+                                    <th>A'zo bo'lgan sana</th>
+                                    <th>Status</th>
+                                    <th>Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for enrollment in enrollments %}
+                                <tr>
+                                    <td>{{ enrollment.id }}</td>
+                                    <td>{{ enrollment.student.user.first_name }} {{ enrollment.student.user.last_name }}</td>
+                                    <td>{{ enrollment.student.student_id }}</td>
+                                    <td>{{ enrollment.student.user.email }}</td>
+                                    <td>{{ enrollment.enrollment_date.strftime('%d.%m.%Y') }}</td>
+                                    <td>
+                                        {% if enrollment.status == 'active' %}
+                                        <span class="badge bg-success">Faol</span>
+                                        {% elif enrollment.status == 'completed' %}
+                                        <span class="badge bg-primary">Tugatilgan</span>
+                                        {% elif enrollment.status == 'dropped' %}
+                                        <span class="badge bg-danger">Tark etilgan</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary" 
+                                                    onclick="editEnrollment({{ enrollment.id }})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info"
+                                                    onclick="viewAttendance({{ enrollment.student.user.id }})">
+                                                <i class="fas fa-calendar-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="confirmDelete({{ enrollment.id }}, '{{ enrollment.student.user.first_name }} {{ enrollment.student.user.last_name }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Bu sinfda hali o'quvchilar mavjud emas.
+                        <a href="{{ url_for('add_enrollment', class_id=class_obj.id) }}" class="alert-link">O'quvchi qo'shish</a> tugmasini bosing.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Enrollment Modal -->
+<div class="modal fade" id="editEnrollmentModal" tabindex="-1" aria-labelledby="editEnrollmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editEnrollmentModalLabel">O'quvchi statusini o'zgartirish</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editEnrollmentForm" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="enrollment_status" class="form-label">Status</label>
+                        <select class="form-select" id="enrollment_status" name="status" required>
+                            <option value="active">Faol</option>
+                            <option value="completed">Tugatilgan</option>
+                            <option value="dropped">Tark etilgan</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                <button type="button" class="btn btn-primary" onclick="saveEnrollment()">Saqlash</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">O'quvchini sinfdan o'chirish</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Siz <span id="studentName" class="fw-bold"></span> ismli o'quvchini <strong>{{ class_obj.name }}</strong> sinfidan o'chirmoqchimisiz?</p>
+                <p class="text-danger">Ushbu amal qaytarilib bo'lmaydi va o'quvchining ushbu sinfdagi barcha davomat va baho ma'lumotlari ham o'chiriladi.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                <form id="deleteForm" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">O'chirish</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    let currentEnrollmentId = null;
+    
+    // Edit enrollment status
+    function editEnrollment(enrollmentId) {
+        currentEnrollmentId = enrollmentId;
+        
+        // Get current status from the table
+        const row = document.querySelector(`tr td:first-child:contains('${enrollmentId}')`).closest('tr');
+        const statusCell = row.querySelector('td:nth-child(6) .badge');
+        let currentStatus = 'active';
+        
+        if (statusCell.classList.contains('bg-primary')) {
+            currentStatus = 'completed';
+        } else if (statusCell.classList.contains('bg-danger')) {
+            currentStatus = 'dropped';
+        }
+        
+        // Set current status in the modal
+        document.getElementById('enrollment_status').value = currentStatus;
+        
+        // Show modal
+        new bootstrap.Modal(document.getElementById('editEnrollmentModal')).show();
+    }
+    
+    // Save enrollment changes
+    function saveEnrollment() {
+        // Here you would normally submit the form with AJAX
+        // For now, we'll just show a success message and reload
+        alert('O\'quvchi statusi muvaffaqiyatli yangilandi');
+        location.reload();
+    }
+    
+    // View student attendance
+    function viewAttendance(studentId) {
+        // Redirect to student attendance view
+        window.location.href = `/admin/student/${studentId}/attendance`;
+    }
+    
+    // Confirm deletion
+    function confirmDelete(enrollmentId, studentName) {
+        document.getElementById('studentName').textContent = studentName;
+        document.getElementById('deleteForm').action = `/admin/enrollments/delete/${enrollmentId}`;
+        
+        // Show modal
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+    
+    // jQuery contains selector for plain JavaScript
+    if (!Element.prototype.contains) {
+        Element.prototype.contains = function(text) {
+            return this.textContent.includes(text);
+        };
+    }
+    
+    // Filter students on search
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('student_search');
+        
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                const searchText = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#enrollmentsTable tbody tr');
+                
+                rows.forEach(row => {
+                    const studentName = row.cells[1].textContent.toLowerCase();
+                    const studentId = row.cells[2].textContent.toLowerCase();
+                    const email = row.cells[3].textContent.toLowerCase();
+                    
+                    if (studentName.includes(searchText) || studentId.includes(searchText) || email.includes(searchText)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

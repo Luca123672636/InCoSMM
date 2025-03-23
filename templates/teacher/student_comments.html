@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}O'quvchi izohlari{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-1">{{ student.first_name }} {{ student.last_name }}</h1>
+            <p class="text-muted">
+                <i class="fas fa-graduation-cap me-1"></i> {{ class_obj.name }} sinfi
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('teacher_attendance', class_id=class_obj.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Davomatga qaytish
+            </a>
+        </div>
+    </div>
+    
+    <!-- Student Info Card -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2 text-center">
+                            <i class="fas fa-user-graduate fa-5x text-primary mb-3"></i>
+                        </div>
+                        <div class="col-md-5">
+                            <h5>O'quvchi ma'lumotlari</h5>
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>O'quvchi ID:</strong></td>
+                                    <td>{{ student.student_profile.student_id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Email:</strong></td>
+                                    <td>{{ student.email }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tug'ilgan sana:</strong></td>
+                                    <td>{{ student.student_profile.date_of_birth.strftime('%d.%m.%Y') if student.student_profile.date_of_birth else 'Kiritilmagan' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-5">
+                            <h5>Davomat ma'lumotlari</h5>
+                            {% set present_count = 0 %}
+                            {% set absent_count = 0 %}
+                            {% set late_count = 0 %}
+                            {% set excused_count = 0 %}
+                            
+                            {% for record in enrollment.attendance_records %}
+                                {% if record.status == 'present' %}
+                                    {% set present_count = present_count + 1 %}
+                                {% elif record.status == 'absent' %}
+                                    {% set absent_count = absent_count + 1 %}
+                                {% elif record.status == 'late' %}
+                                    {% set late_count = late_count + 1 %}
+                                {% elif record.status == 'excused' %}
+                                    {% set excused_count = excused_count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% set total_count = present_count + absent_count + late_count + excused_count %}
+                            
+                            <div class="attendance-pie-container mb-2" style="height: 120px;">
+                                <canvas id="attendancePieChart"></canvas>
+                            </div>
+                            <div class="text-center">
+                                {% if total_count > 0 %}
+                                    {% set percentage = (present_count / total_count) * 100 %}
+                                    <span class="badge 
+                                        {{ 'bg-success' if percentage >= 90 else 
+                                           'bg-primary' if percentage >= 75 else 
+                                           'bg-warning' if percentage >= 50 else 
+                                           'bg-danger' }}">
+                                        {{ percentage|round(1) }}% davomat
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Ma'lumot yo'q</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add New Comment -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-comment-medical me-2"></i> Yangi izoh qo'shish</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('student_comments', enrollment_id=enrollment.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.comment.label(class="form-label") }}
+                            {% if form.comment.errors %}
+                                {{ form.comment(class="form-control is-invalid", rows=4) }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.comment.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.comment(class="form-control", rows=4, placeholder="O'quvchi haqida izoh yozing...") }}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.rating.label(class="form-label") }}
+                            {{ form.rating(class="form-select") }}
+                            <div class="form-text">O'quvchining faolligini baholang (ixtiyoriy)</div>
+                        </div>
+                        
+                        <div class="text-end">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Comment History -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-history me-2"></i> Izohlar tarixi</h5>
+                </div>
+                <div class="card-body">
+                    {% if comments %}
+                        <div class="timeline">
+                            {% for comment in comments %}
+                            <div class="comment-card card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="card-subtitle text-muted">
+                                            <i class="fas fa-user me-1"></i> {{ comment.teacher.first_name }} {{ comment.teacher.last_name }}
+                                        </h6>
+                                        <small class="text-muted">{{ comment.comment_date.strftime('%d.%m.%Y %H:%M') }}</small>
+                                    </div>
+                                    <p class="card-text">{{ comment.comment }}</p>
+                                    {% if comment.rating %}
+                                    <div class="comment-rating">
+                                        {% for i in range(comment.rating|int) %}
+                                        <i class="fas fa-star"></i>
+                                        {% endfor %}
+                                        {% for i in range(5 - comment.rating|int) %}
+                                        <i class="far fa-star"></i>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> Hali izohlar mavjud emas.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize attendance pie chart
+        initAttendancePieChart(
+            'attendancePieChart', 
+            {{ present_count }}, 
+            {{ absent_count }}, 
+            {{ late_count }}, 
+            {{ excused_count }}
+        );
+    });
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}Sinfni tahrirlash{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-edit me-2"></i> Sinfni tahrirlash</h1>
+            <p class="text-muted">{{ class_obj.name }}</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('manage_classes') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Sinflarga qaytish
+            </a>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm form-card">
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('edit_class', class_id=class_obj.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {% if form.name.errors %}
+                                {{ form.name(class="form-control is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.name(class="form-control") }}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {% if form.description.errors %}
+                                {{ form.description(class="form-control is-invalid", rows=3) }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.description(class="form-control", rows=3) }}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.teacher_id.label(class="form-label") }}
+                                {% if form.teacher_id.errors %}
+                                    {{ form.teacher_id(class="form-select is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.teacher_id.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.teacher_id(class="form-select") }}
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.schedule.label(class="form-label") }}
+                                {% if form.schedule.errors %}
+                                    {{ form.schedule(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.schedule.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.schedule(class="form-control") }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.start_date.label(class="form-label") }}
+                                {% if form.start_date.errors %}
+                                    {{ form.start_date(class="form-control is-invalid", type="date") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.start_date.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.start_date(class="form-control", type="date") }}
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.end_date.label(class="form-label") }}
+                                {% if form.end_date.errors %}
+                                    {{ form.end_date(class="form-control is-invalid", type="date") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.end_date.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.end_date(class="form-control", type="date") }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 form-check form-switch">
+                            {{ form.is_active(class="form-check-input") }}
+                            {{ form.is_active.label(class="form-check-label") }}
+                            <div class="form-text">
+                                Faol emasligi davomat belgilashni to'xtatib qo'yadi.
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo me-1"></i> Bekor qilish
+                            </button>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm form-card mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Sinf boshqaruvi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-user-graduate fa-3x text-primary"></i>
+                                    </div>
+                                    <h5 class="card-title">O'quvchilar</h5>
+                                    <p class="card-text">O'quvchilarni boshqarish va yangi o'quvchilar qo'shish.</p>
+                                    <a href="{{ url_for('manage_enrollments', class_id=class_obj.id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-users me-1"></i> O'quvchilar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-calendar-alt fa-3x text-success"></i>
+                                    </div>
+                                    <h5 class="card-title">Darslar</h5>
+                                    <p class="card-text">Dars sessiyalarini boshqarish va yangi darslar qo'shish.</p>
+                                    <a href="{{ url_for('manage_sessions', class_id=class_obj.id) }}" class="btn btn-outline-success">
+                                        <i class="fas fa-calendar-day me-1"></i> Darslar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100 border-danger">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="fas fa-trash-alt fa-3x text-danger"></i>
+                                    </div>
+                                    <h5 class="card-title">Sinfni o'chirish</h5>
+                                    <p class="card-text">Sinfni va unga tegishli barcha ma'lumotlarni o'chirish.</p>
+                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteClassModal">
+                                        <i class="fas fa-trash me-1"></i> O'chirish
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Class Modal -->
+<div class="modal fade" id="deleteClassModal" tabindex="-1" aria-labelledby="deleteClassModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteClassModalLabel">Sinfni o'chirish</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Siz haqiqatan ham <strong>{{ class_obj.name }}</strong> sinfini o'chirmoqchimisiz?</p>
+                <p class="text-danger">Ushbu amal qaytarilib bo'lmaydi va sinfga tegishli barcha ma'lumotlar, shu jumladan o'quvchilar ro'yxati, dars sessiyalari va davomat ma'lumotlari ham o'chiriladi.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                <form method="POST" action="{{ url_for('delete_class', class_id=class_obj.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">O'chirish</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

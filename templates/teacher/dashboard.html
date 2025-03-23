@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block title %}O'qituvchi boshqaruv paneli{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4"><i class="fas fa-chalkboard-teacher me-2"></i> O'qituvchi boshqaruv paneli</h1>
+        </div>
+    </div>
+    
+    <!-- Teacher Info & Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-4 mb-md-0">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-user-circle fa-5x text-primary"></i>
+                    </div>
+                    <h4 class="card-title">{{ current_user.first_name }} {{ current_user.last_name }}</h4>
+                    <p class="card-text text-muted">{{ current_user.email }}</p>
+                    <div class="row mt-4">
+                        <div class="col-6">
+                            <div class="border-end border-light">
+                                <h5>{{ classes|length }}</h5>
+                                <p class="text-muted mb-0">Sinflar</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h5 id="totalStudentsCount">0</h5>
+                            <p class="text-muted mb-0">O'quvchilar</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="{{ url_for('teacher_classes') }}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-graduation-cap me-1"></i> Mening sinflarim
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="row h-100">
+                <!-- Quick Actions -->
+                <div class="col-md-6 mb-4 mb-md-0">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-bolt me-2"></i> Tezkor amallar</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                {% if classes %}
+                                <a href="{{ url_for('teacher_attendance', class_id=classes[0].id) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-calendar-check me-1"></i> Davomatni belgilash
+                                </a>
+                                <a href="{{ url_for('teacher_add_session', class_id=classes[0].id) }}" class="btn btn-outline-success">
+                                    <i class="fas fa-plus-circle me-1"></i> Yangi dars qo'shish
+                                </a>
+                                {% else %}
+                                <button class="btn btn-outline-primary" disabled>
+                                    <i class="fas fa-calendar-check me-1"></i> Davomatni belgilash
+                                </button>
+                                <button class="btn btn-outline-success" disabled>
+                                    <i class="fas fa-plus-circle me-1"></i> Yangi dars qo'shish
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-outline-info">
+                                    <i class="fas fa-file-alt me-1"></i> Hisobot yaratish
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Today's Schedule -->
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-calendar-day me-2"></i> Bugungi jadval</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush">
+                                {% set today = now().strftime('%Y-%m-%d') %}
+                                {% set found_today = false %}
+                                
+                                {% for class_obj in classes %}
+                                    {% for session in class_obj.sessions %}
+                                        {% if session.date.strftime('%Y-%m-%d') == today %}
+                                            {% set found_today = true %}
+                                            <a href="{{ url_for('mark_attendance', session_id=session.id) }}" class="list-group-item list-group-item-action">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1">{{ class_obj.name }}</h6>
+                                                    <small>{{ session.start_time.strftime('%H:%M') }} - {{ session.end_time.strftime('%H:%M') }}</small>
+                                                </div>
+                                                <p class="mb-1">{{ session.topic or 'Mavzu belgilanmagan' }}</p>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-users me-1"></i> {{ class_obj.enrollments|length }} o'quvchi
+                                                    </small>
+                                                    <span class="badge bg-primary">Belgilash</span>
+                                                </div>
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                
+                                {% if not found_today %}
+                                    <div class="list-group-item text-center py-4">
+                                        <i class="fas fa-calendar-times text-muted mb-2" style="font-size: 2rem;"></i>
+                                        <p class="mb-0">Bugun darslar mavjud emas</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Class Performance & Recent Sessions -->
+    <div class="row">
+        <!-- Class Performance -->
+        <div class="col-lg-7 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i> Sinflar davomati</h5>
+                </div>
+                <div class="card-body">
+                    {% if class_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Sinf</th>
+                                    <th>O'quvchilar</th>
+                                    <th>Darslar</th>
+                                    <th>Davomat</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in class_stats %}
+                                <tr>
+                                    <td>{{ stat.class.name }}</td>
+                                    <td>{{ stat.enrollments }}</td>
+                                    <td>{{ stat.total_sessions }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ stat.attendance_rate }}%"
+                                                     aria-valuenow="{{ stat.attendance_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <span class="ms-2">{{ stat.attendance_rate }}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('teacher_attendance', class_id=stat.class.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-chart-line"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Hali statistik ma'lumotlar mavjud emas.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Sessions -->
+        <div class="col-lg-5 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-history me-2"></i> So'nggi darslar</h5>
+                    {% if classes %}
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="dropdownMenuButton"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-plus-circle me-1"></i> Yangi dars
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            {% for class_obj in classes %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('teacher_add_session', class_id=class_obj.id) }}">
+                                    {{ class_obj.name }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% if recent_sessions %}
+                            {% for session, class_obj in recent_sessions %}
+                            <a href="{{ url_for('mark_attendance', session_id=session.id) }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ class_obj.name }}</h6>
+                                    <small>{{ session.date.strftime('%d.%m.%Y') }}</small>
+                                </div>
+                                <p class="mb-1">{{ session.topic or 'Mavzu belgilanmagan' }}</p>
+                                <small class="text-muted">
+                                    {{ session.start_time.strftime('%H:%M') }} - {{ session.end_time.strftime('%H:%M') }}
+                                </small>
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <div class="list-group-item text-center py-4">
+                                <i class="fas fa-calendar-times text-muted mb-2" style="font-size: 2rem;"></i>
+                                <p class="mb-0">Hali darslar mavjud emas</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if recent_sessions %}
+                <div class="card-footer bg-transparent text-center">
+                    <a href="#" class="btn btn-link">Barcha darslarni ko'rish</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Calculate total students count
+        let totalStudents = 0;
+        {% for stat in class_stats %}
+            totalStudents += {{ stat.enrollments }};
+        {% endfor %}
+        
+        // Update total students count
+        document.getElementById('totalStudentsCount').textContent = totalStudents;
+        
+        // Today's date for highlighting
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        // Highlight today's sessions
+        document.querySelectorAll('.list-group-item').forEach(item => {
+            const dateText = item.querySelector('small');
+            if (dateText && dateText.textContent === todayStr) {
+                item.classList.add('list-group-item-primary');
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

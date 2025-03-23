@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}Foydalanuvchilar boshqaruvi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-users me-2"></i> Foydalanuvchilar boshqaruvi</h1>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('add_user') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-1"></i> Yangi foydalanuvchi
+            </a>
+            <a href="{{ url_for('import_students') }}" class="btn btn-success ms-2">
+                <i class="fas fa-file-import me-1"></i> Import
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filter Controls -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="userTable_search" class="form-control" placeholder="Qidirish...">
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <select id="roleFilter" class="form-select" onchange="filterTable()">
+                                <option value="">Barcha rollar</option>
+                                <option value="admin">Administrator</option>
+                                <option value="teacher">O'qituvchi</option>
+                                <option value="student">O'quvchi</option>
+                                <option value="parent">Ota-ona</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <select id="statusFilter" class="form-select" onchange="filterTable()">
+                                <option value="">Barcha statuslar</option>
+                                <option value="active">Faol</option>
+                                <option value="inactive">Faol emas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                                <i class="fas fa-redo me-1"></i> Qayta o'rnatish
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Users Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="userTable" class="table table-hover datatable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Ism</th>
+                                    <th>Familiya</th>
+                                    <th>Foydalanuvchi nomi</th>
+                                    <th>Email</th>
+                                    <th>Rol</th>
+                                    <th>Status</th>
+                                    <th>Ro'yxatdan o'tgan sana</th>
+                                    <th>Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr data-role="{{ user.role }}" data-status="{{ 'active' if user.is_active else 'inactive' }}">
+                                    <td>{{ user.id }}</td>
+                                    <td>{{ user.first_name }}</td>
+                                    <td>{{ user.last_name }}</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        {% if user.role == 'admin' %}
+                                        <span class="badge bg-danger">Administrator</span>
+                                        {% elif user.role == 'teacher' %}
+                                        <span class="badge bg-primary">O'qituvchi</span>
+                                        {% elif user.role == 'student' %}
+                                        <span class="badge bg-success">O'quvchi</span>
+                                        {% elif user.role == 'parent' %}
+                                        <span class="badge bg-info">Ota-ona</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ user.role }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.is_active %}
+                                        <span class="badge bg-success">Faol</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Faol emas</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.date_registered.strftime('%d.%m.%Y') }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            {% if user.role == 'student' and user.student_profile %}
+                                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                                    onclick="window.location.href='{{ url_for('student_dashboard') if current_user.id == user.id else '#' }}'">
+                                                <i class="fas fa-user-graduate"></i>
+                                            </button>
+                                            {% endif %}
+                                            
+                                            {% if user.role == 'parent' and user.parent_profile %}
+                                            <a href="{{ url_for('manage_parent_connections', parent_id=user.id) }}" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-link"></i>
+                                            </a>
+                                            {% endif %}
+                                            
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="confirmDelete({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Foydalanuvchini o'chirish</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Siz foydalanuvchini o'chirmoqchimisiz? <strong id="deleteUserName"></strong></p>
+                <p class="text-danger">Ushbu amal qaytarilib bo'lmaydi va barcha bog'liq ma'lumotlar ham o'chiriladi.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                <form id="deleteForm" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">O'chirish</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Initialize DataTable with custom settings
+    document.addEventListener('DOMContentLoaded', function() {
+        // Already initialized in datatables-init.js
+    });
+    
+    // Filter table based on role and status
+    function filterTable() {
+        const roleFilter = document.getElementById('roleFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        
+        const rows = document.querySelectorAll('#userTable tbody tr');
+        
+        rows.forEach(row => {
+            const roleMatch = !roleFilter || row.dataset.role === roleFilter;
+            const statusMatch = !statusFilter || row.dataset.status === statusFilter;
+            
+            if (roleMatch && statusMatch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // Reset all filters
+    function resetFilters() {
+        document.getElementById('roleFilter').value = '';
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('userTable_search').value = '';
+        
+        // Reset DataTable search
+        $('#userTable').DataTable().search('').draw();
+        
+        // Show all rows
+        const rows = document.querySelectorAll('#userTable tbody tr');
+        rows.forEach(row => {
+            row.style.display = '';
+        });
+    }
+    
+    // Confirmation for user deletion
+    function confirmDelete(userId, userName) {
+        document.getElementById('deleteUserName').textContent = userName;
+        document.getElementById('deleteForm').action = `/admin/users/delete/${userId}`;
+        
+        // Show modal
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+</script>
+{% endblock %}
+{% endblock %}

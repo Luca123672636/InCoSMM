@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Ta'lim markazida davomat tizimi{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10 text-center">
+            <div class="py-5">
+                <h1 class="display-4 mb-4">Ta'lim markazida davomat tizimi</h1>
+                <p class="lead mb-5">
+                    Ta'lim markazimizda o'qituvchilar, o'quvchilar va ota-onalar uchun qulay va samarali davomat 
+                    boshqaruvi tizimiga xush kelibsiz!
+                </p>
+                
+                {% if not current_user.is_authenticated %}
+                <div class="d-grid gap-3 d-sm-flex justify-content-sm-center mb-5">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-4 gap-3">
+                        <i class="fas fa-sign-in-alt me-2"></i> Tizimga kirish
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="row g-4 py-5">
+                <div class="col-md-4">
+                    <div class="card h-100 stat-card">
+                        <div class="card-body text-center">
+                            <div class="stat-icon text-primary">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                            </div>
+                            <h3 class="card-title">O'qituvchilar uchun</h3>
+                            <p class="card-text">
+                                Dars davomatini nazorat qilish, o'quvchilar haqida izoh qoldirish, 
+                                statistikalarni ko'rib chiqish
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100 stat-card">
+                        <div class="card-body text-center">
+                            <div class="stat-icon text-success">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <h3 class="card-title">O'quvchilar uchun</h3>
+                            <p class="card-text">
+                                O'z davomatini kuzatish, o'qituvchi izohlarini ko'rish, muvaffaqiyat 
+                                belgilarini olish
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100 stat-card">
+                        <div class="card-body text-center">
+                            <div class="stat-icon text-info">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h3 class="card-title">Ota-onalar uchun</h3>
+                            <p class="card-text">
+                                Farzandingiz davomatini kuzatish, darsga qatnashishi to'g'risida ma'lumot olish, 
+                                o'qituvchi fikr-mulohazalari bilan tanishish
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row py-5">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h2 class="card-title text-center mb-4">Tizim imkoniyatlari</h2>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            Davomatni elektron kuzatish
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            Statistik hisobotlar
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            O'quvchilar haqida izohlar
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            Excel/PDF formatida hisobotlar
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            Rol asosidagi ruxsatlar
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            Mobil qurilmalarga moslashgan dizayn
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

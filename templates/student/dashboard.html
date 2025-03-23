@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block title %}O'quvchi boshqaruv paneli{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4"><i class="fas fa-user-graduate me-2"></i> O'quvchi boshqaruv paneli</h1>
+        </div>
+    </div>
+    
+    <!-- Student Info & Perfect Attendance Badge -->
+    <div class="row mb-4">
+        <div class="col-md-7 mb-4 mb-md-0">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <i class="fas fa-user-graduate fa-6x text-primary mb-3"></i>
+                        </div>
+                        <div class="col-md-9">
+                            <h2 class="mb-1">{{ current_user.first_name }} {{ current_user.last_name }}</h2>
+                            <p class="text-muted mb-3">
+                                <i class="fas fa-id-card me-1"></i> ID: {{ student_profile.student_id }} |
+                                <i class="fas fa-envelope me-1"></i> {{ current_user.email }}
+                            </p>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2 text-center">
+                                            <h3 class="mb-0">{{ enrollments|length }}</h3>
+                                            <p class="mb-0">Sinflar</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2 text-center">
+                                            {% set total_sessions = 0 %}
+                                            {% for stat in attendance_stats %}
+                                                {% set total_sessions = total_sessions + stat.total_sessions %}
+                                            {% endfor %}
+                                            <h3 class="mb-0">{{ total_sessions }}</h3>
+                                            <p class="mb-0">Darslar</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex mt-3">
+                                <a href="{{ url_for('student_attendance') }}" class="btn btn-primary">
+                                    <i class="fas fa-calendar-check me-1"></i> Davomat tarixini ko'rish
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-5">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    {% if perfect_attendance %}
+                    <div class="py-4">
+                        <div class="perfect-attendance-badge mb-3">
+                            100% DAVOMAT
+                        </div>
+                        <h4 class="mb-3">Tabriklaymiz!</h4>
+                        <p class="mb-0">
+                            Siz barcha darslarga to'liq qatnashgansiz. Davom eting!
+                        </p>
+                    </div>
+                    {% else %}
+                    <div class="py-4">
+                        <i class="fas fa-chart-line fa-4x text-primary mb-3"></i>
+                        <h4 class="mb-3">Maqsadingizga erishish uchun</h4>
+                        <p class="mb-3">
+                            100% davomat ko'rsatkichiga erishish uchun barcha darslarga to'liq qatnashing.
+                        </p>
+                        <div class="progress" style="height: 10px;">
+                            {% set overall_present = 0 %}
+                            {% set overall_total = 0 %}
+                            
+                            {% for stat in attendance_stats %}
+                                {% set overall_present = overall_present + stat.present_count %}
+                                {% set overall_total = overall_total + stat.total_sessions %}
+                            {% endfor %}
+                            
+                            {% if overall_total > 0 %}
+                                {% set overall_percentage = (overall_present / overall_total) * 100 %}
+                            {% else %}
+                                {% set overall_percentage = 0 %}
+                            {% endif %}
+                            
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ overall_percentage }}%" 
+                                 aria-valuenow="{{ overall_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <p class="mt-2 text-muted">
+                            Umumiy davomat: {{ overall_percentage|round(1) }}%
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Classes & Attendance Stats -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i> Sinflardagi davomat</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="chart-container">
+                                <canvas id="studentAttendanceChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Sinf</th>
+                                            <th>Davomat</th>
+                                            <th>Holat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="classDataTableBody">
+                                        {% for stat in attendance_stats %}
+                                        <tr>
+                                            <td>{{ stat.class.name }}</td>
+                                            <td>
+                                                {% if stat.total_sessions > 0 %}
+                                                    {{ stat.attendance_rate }}%
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if stat.total_sessions > 0 %}
+                                                    {% if stat.attendance_rate >= 90 %}
+                                                        <span class="badge bg-success">A'lo</span>
+                                                    {% elif stat.attendance_rate >= 75 %}
+                                                        <span class="badge bg-primary">Yaxshi</span>
+                                                    {% elif stat.attendance_rate >= 50 %}
+                                                        <span class="badge bg-warning">O'rtacha</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">Past</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Ma'lumot yo'q</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Comments -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-comment-dots me-2"></i> O'qituvchilardan izohlar</h5>
+                </div>
+                <div class="card-body">
+                    {% if comments %}
+                    <div class="row">
+                        {% for comment, class_obj in comments %}
+                        <div class="col-md-6 mb-3">
+                            <div class="comment-card card h-100">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">{{ class_obj.name }}</h6>
+                                        <small class="text-muted">{{ comment.comment_date.strftime('%d.%m.%Y') }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="fas fa-user me-1"></i> {{ comment.teacher.first_name }} {{ comment.teacher.last_name }}
+                                    </h6>
+                                    <p class="card-text">{{ comment.comment }}</p>
+                                    {% if comment.rating %}
+                                    <div class="comment-rating">
+                                        {% for i in range(comment.rating|int) %}
+                                        <i class="fas fa-star"></i>
+                                        {% endfor %}
+                                        {% for i in range(5 - comment.rating|int) %}
+                                        <i class="far fa-star"></i>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Hali izohlar mavjud emas.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load student attendance data
+        loadStudentAttendanceData({{ current_user.id }});
+    });
+</script>
+{% endblock %}
+{% endblock %}

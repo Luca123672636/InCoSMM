@@ -1,0 +1,420 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ class_obj.name }} - Davomat{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header with Class Info -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-2">{{ class_obj.name }}</h1>
+            <p class="text-muted">
+                <i class="fas fa-calendar me-1"></i> {{ class_obj.schedule }} | 
+                <i class="fas fa-user-graduate me-1"></i> {{ enrollments|length }} o'quvchi
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('teacher_class_detail', class_id=class_obj.id) }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i> Orqaga
+            </a>
+            <a href="{{ url_for('mark_attendance', session_id=sessions[0].id) if sessions else '#' }}" 
+               class="btn btn-primary {{ 'disabled' if not sessions }}">
+                <i class="fas fa-clipboard-check me-1"></i> Davomat belgilash
+            </a>
+        </div>
+    </div>
+    
+    <!-- Attendance Overview & Chart -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i> Davomat statistikasi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="chart-container">
+                                <canvas id="attendanceBarChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Davomat tahlili</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tbody>
+                                                <tr>
+                                                    <td>Jami darslar:</td>
+                                                    <td class="text-end fw-bold">{{ sessions|length }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Jami o'quvchilar:</td>
+                                                    <td class="text-end fw-bold">{{ enrollments|length }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="2">
+                                                        <hr class="my-2">
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>O'rtacha davomat:</td>
+                                                    <td class="text-end">
+                                                        {% set attendance_total = 0 %}
+                                                        {% set count = 0 %}
+                                                        {% for student_name, status_counts in attendance_data.items() %}
+                                                            {% set total = status_counts.present + status_counts.absent + 
+                                                                           status_counts.late + status_counts.excused %}
+                                                            {% if total > 0 %}
+                                                                {% set percentage = (status_counts.present / total) * 100 %}
+                                                                {% set attendance_total = attendance_total + percentage %}
+                                                                {% set count = count + 1 %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        
+                                                        {% if count > 0 %}
+                                                            {% set average = (attendance_total / count)|round(1) %}
+                                                            <span class="fw-bold 
+                                                                {{ 'text-success' if average >= 90 else 
+                                                                   'text-primary' if average >= 75 else 
+                                                                   'text-warning' if average >= 50 else 
+                                                                   'text-danger' }}">
+                                                                {{ average }}%
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="text-muted">Ma'lumot yo'q</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <a href="#attendanceTable" class="btn btn-outline-primary">
+                                    <i class="fas fa-table me-1"></i> Batafsil ma'lumotlar
+                                </a>
+                                <button type="button" class="btn btn-outline-success" onclick="exportAttendanceData()">
+                                    <i class="fas fa-file-export me-1"></i> Ma'lumotlarni export qilish
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Session List with Attendance Records -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-calendar-alt me-2"></i> Dars sessiyalari</h5>
+                    <a href="{{ url_for('teacher_add_session', class_id=class_obj.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-plus-circle me-1"></i> Yangi dars
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Sana</th>
+                                    <th>Vaqt</th>
+                                    <th>Mavzu</th>
+                                    <th>Qatnashganlar</th>
+                                    <th>Qatnashish foizi</th>
+                                    <th>Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in sessions %}
+                                <tr>
+                                    <td>{{ session.date.strftime('%d.%m.%Y') }}</td>
+                                    <td>{{ session.start_time.strftime('%H:%M') }} - {{ session.end_time.strftime('%H:%M') }}</td>
+                                    <td>{{ session.topic or 'Mavzu belgilanmagan' }}</td>
+                                    <td>
+                                        {% set present_count = 0 %}
+                                        {% set total_count = 0 %}
+                                        
+                                        {% for record in session.attendance_records %}
+                                            {% if record.status == 'present' %}
+                                                {% set present_count = present_count + 1 %}
+                                            {% endif %}
+                                            {% set total_count = total_count + 1 %}
+                                        {% endfor %}
+                                        
+                                        {{ present_count }}/{{ total_count if total_count > 0 else enrollments|length }}
+                                    </td>
+                                    <td>
+                                        {% if total_count > 0 %}
+                                            {% set percentage = (present_count / total_count) * 100 %}
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar {{ 'bg-success' if percentage >= 90 else 
+                                                                            'bg-primary' if percentage >= 75 else 
+                                                                            'bg-warning' if percentage >= 50 else 
+                                                                            'bg-danger' }}" 
+                                                     role="progressbar" style="width: {{ percentage }}%" 
+                                                     aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <small>{{ percentage|round(1) }}%</small>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Belgilanmagan</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('mark_attendance', session_id=session.id) }}" class="btn btn-outline-primary">
+                                                <i class="fas fa-clipboard-check"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-info" 
+                                                    onclick="viewSessionDetails({{ session.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detailed Attendance Table -->
+    <div class="row" id="attendanceTable">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-table me-2"></i> Batafsil davomat ma'lumotlari</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Search and Filter Controls -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="searchStudent" class="form-control" placeholder="O'quvchi nomini qidirish...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="filterStatus" class="form-select">
+                                <option value="">Barcha statuslar</option>
+                                <option value="present">Qatnashdi</option>
+                                <option value="absent">Qatnashmadi</option>
+                                <option value="late">Kechikdi</option>
+                                <option value="excused">Sababli</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table id="attendanceDetailTable" class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>O'quvchi</th>
+                                    <th class="text-center">Qatnashdi</th>
+                                    <th class="text-center">Qatnashmadi</th>
+                                    <th class="text-center">Kechikdi</th>
+                                    <th class="text-center">Sababli</th>
+                                    <th>Davomat foizi</th>
+                                    <th>Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                {% for student_name, status_counts in attendance_data.items() %}
+                                <tr>
+                                    <td>{{ student_name }}</td>
+                                    <td class="text-center">{{ status_counts.present }}</td>
+                                    <td class="text-center">{{ status_counts.absent }}</td>
+                                    <td class="text-center">{{ status_counts.late }}</td>
+                                    <td class="text-center">{{ status_counts.excused }}</td>
+                                    <td>
+                                        {% set total = status_counts.present + status_counts.absent + 
+                                                      status_counts.late + status_counts.excused %}
+                                        {% if total > 0 %}
+                                            {% set percentage = (status_counts.present / total) * 100 %}
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar {{ 'bg-success' if percentage >= 90 else 
+                                                                            'bg-primary' if percentage >= 75 else 
+                                                                            'bg-warning' if percentage >= 50 else 
+                                                                            'bg-danger' }}" 
+                                                     role="progressbar" style="width: {{ percentage }}%" 
+                                                     aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <small>{{ percentage|round(1) }}%</small>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Ma'lumot yo'q</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% for enrollment in enrollments %}
+                                            {% if student_name == enrollment.student.user.first_name + ' ' + enrollment.student.user.last_name %}
+                                                <a href="{{ url_for('student_comments', enrollment_id=enrollment.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-comment-dots"></i> Izohlar
+                                                </a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Session Details Modal -->
+<div class="modal fade" id="sessionDetailsModal" tabindex="-1" aria-labelledby="sessionDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sessionDetailsModalLabel">Dars tafsilotlari</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Yuklanmoqda...</span>
+                    </div>
+                    <p class="mt-2">Ma'lumotlar yuklanmoqda...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+                <a href="#" id="editAttendanceBtn" class="btn btn-primary">
+                    <i class="fas fa-edit me-1"></i> Davomatni tahrirlash
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize attendance chart
+        const attendanceData = {
+            labels: [
+                {% for student_name, status_counts in attendance_data.items() %}
+                "{{ student_name }}",
+                {% endfor %}
+            ],
+            presentData: [
+                {% for student_name, status_counts in attendance_data.items() %}
+                    {% set total = status_counts.present + status_counts.absent + 
+                                  status_counts.late + status_counts.excused %}
+                    {% if total > 0 %}
+                        {{ ((status_counts.present / total) * 100)|round(1) }},
+                    {% else %}
+                        0,
+                    {% endif %}
+                {% endfor %}
+            ],
+            absentData: [
+                {% for student_name, status_counts in attendance_data.items() %}
+                    {% set total = status_counts.present + status_counts.absent + 
+                                  status_counts.late + status_counts.excused %}
+                    {% if total > 0 %}
+                        {{ ((status_counts.absent / total) * 100)|round(1) }},
+                    {% else %}
+                        0,
+                    {% endif %}
+                {% endfor %}
+            ],
+            lateData: [
+                {% for student_name, status_counts in attendance_data.items() %}
+                    {% set total = status_counts.present + status_counts.absent + 
+                                  status_counts.late + status_counts.excused %}
+                    {% if total > 0 %}
+                        {{ ((status_counts.late / total) * 100)|round(1) }},
+                    {% else %}
+                        0,
+                    {% endif %}
+                {% endfor %}
+            ]
+        };
+        
+        initClassAttendanceBarChart(
+            'attendanceBarChart', 
+            attendanceData.labels, 
+            attendanceData.presentData,
+            attendanceData.absentData,
+            attendanceData.lateData
+        );
+        
+        // Initialize student search
+        const searchInput = document.getElementById('searchStudent');
+        const filterStatus = document.getElementById('filterStatus');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', filterStudents);
+        }
+        
+        if (filterStatus) {
+            filterStatus.addEventListener('change', filterStudents);
+        }
+    });
+    
+    // Function to filter students in the table
+    function filterStudents() {
+        const searchValue = document.getElementById('searchStudent').value.toLowerCase();
+        const statusFilter = document.getElementById('filterStatus').value;
+        const rows = document.querySelectorAll('#attendanceDetailTable tbody tr');
+        
+        rows.forEach(row => {
+            const studentName = row.cells[0].textContent.toLowerCase();
+            let showRow = true;
+            
+            // Filter by name
+            if (searchValue && !studentName.includes(searchValue)) {
+                showRow = false;
+            }
+            
+            // Filter by status
+            if (statusFilter) {
+                let statusColumn;
+                switch (statusFilter) {
+                    case 'present': statusColumn = 1; break;
+                    case 'absent': statusColumn = 2; break;
+                    case 'late': statusColumn = 3; break;
+                    case 'excused': statusColumn = 4; break;
+                }
+                
+                if (statusColumn && parseInt(row.cells[statusColumn].textContent) === 0) {
+                    showRow = false;
+                }
+            }
+            
+            row.style.display = showRow ? '' : 'none';
+        });
+    }
+    
+    // Function to view session details
+    function viewSessionDetails(sessionId) {
+        const modal = new bootstrap.Modal(document.getElementById('sessionDetailsModal'));
+        modal.show();
+        
+        document.getElementById('editAttendanceBtn').href = `/teacher/mark_attendance/${sessionId}`;
+        
+        // TODO: Load session details via AJAX
+        // This would be implemented with a backend endpoint that returns session details
+    }
+    
+    // Function to export attendance data
+    function exportAttendanceData() {
+        // Use DataTables export functionality
+        // This would be better implemented with a proper export endpoint
+        alert('Eksport qilish funksiyasi tez orada qo\'shiladi');
+    }
+</script>
+{% endblock %}
+{% endblock %}

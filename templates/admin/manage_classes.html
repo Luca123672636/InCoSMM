@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block title %}Sinflar boshqaruvi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-chalkboard me-2"></i> Sinflar boshqaruvi</h1>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('add_class') }}" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-1"></i> Yangi sinf
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filter Controls -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="classTable_search" class="form-control" placeholder="Qidirish...">
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <select id="teacherFilter" class="form-select" onchange="filterTable()">
+                                <option value="">Barcha o'qituvchilar</option>
+                                {% for class in classes %}
+                                <option value="{{ class.teacher.first_name }} {{ class.teacher.last_name }}">
+                                    {{ class.teacher.first_name }} {{ class.teacher.last_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <select id="statusFilter" class="form-select" onchange="filterTable()">
+                                <option value="">Barcha statuslar</option>
+                                <option value="active">Faol</option>
+                                <option value="inactive">Faol emas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                                <i class="fas fa-redo me-1"></i> Qayta o'rnatish
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Classes Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="classTable" class="table table-hover datatable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Sinf nomi</th>
+                                    <th>O'qituvchi</th>
+                                    <th>Jadval</th>
+                                    <th>Sana</th>
+                                    <th>Status</th>
+                                    <th>O'quvchilar</th>
+                                    <th>Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for class in classes %}
+                                <tr data-teacher="{{ class.teacher.first_name }} {{ class.teacher.last_name }}" 
+                                    data-status="{{ 'active' if class.is_active else 'inactive' }}">
+                                    <td>{{ class.id }}</td>
+                                    <td>{{ class.name }}</td>
+                                    <td>{{ class.teacher.first_name }} {{ class.teacher.last_name }}</td>
+                                    <td>{{ class.schedule }}</td>
+                                    <td>{{ class.start_date.strftime('%d.%m.%Y') }} - {{ class.end_date.strftime('%d.%m.%Y') }}</td>
+                                    <td>
+                                        {% if class.is_active %}
+                                        <span class="badge bg-success">Faol</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Faol emas</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ class.enrollments|length }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('edit_class', class_id=class.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('manage_enrollments', class_id=class.id) }}" class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-user-plus"></i>
+                                            </a>
+                                            <a href="{{ url_for('manage_sessions', class_id=class.id) }}" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-calendar-alt"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="confirmDelete({{ class.id }}, '{{ class.name }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Sinfni o'chirish</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Siz sinfni o'chirmoqchimisiz? <strong id="deleteClassName"></strong></p>
+                <p class="text-danger">Ushbu amal qaytarilib bo'lmaydi va barcha bog'liq ma'lumotlar ham o'chiriladi.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                <form id="deleteForm" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">O'chirish</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Filter table based on teacher and status
+    function filterTable() {
+        const teacherFilter = document.getElementById('teacherFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        
+        const rows = document.querySelectorAll('#classTable tbody tr');
+        
+        rows.forEach(row => {
+            const teacherMatch = !teacherFilter || row.dataset.teacher === teacherFilter;
+            const statusMatch = !statusFilter || row.dataset.status === statusFilter;
+            
+            if (teacherMatch && statusMatch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // Reset all filters
+    function resetFilters() {
+        document.getElementById('teacherFilter').value = '';
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('classTable_search').value = '';
+        
+        // Reset DataTable search
+        $('#classTable').DataTable().search('').draw();
+        
+        // Show all rows
+        const rows = document.querySelectorAll('#classTable tbody tr');
+        rows.forEach(row => {
+            row.style.display = '';
+        });
+    }
+    
+    // Confirmation for class deletion
+    function confirmDelete(classId, className) {
+        document.getElementById('deleteClassName').textContent = className;
+        document.getElementById('deleteForm').action = `/admin/classes/delete/${classId}`;
+        
+        // Show modal
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+    
+    // Remove duplicate options from teacher filter
+    document.addEventListener('DOMContentLoaded', function() {
+        const teacherFilter = document.getElementById('teacherFilter');
+        const optionValues = new Set();
+        const options = Array.from(teacherFilter.options);
+        
+        options.forEach((option, index) => {
+            if (index === 0) return; // Skip the first "All teachers" option
+            
+            if (optionValues.has(option.value)) {
+                teacherFilter.removeChild(option);
+            } else {
+                optionValues.add(option.value);
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}
