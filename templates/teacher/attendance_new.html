@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ class_obj.name }} - Davomat{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header with Class Info -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-2">{{ class_obj.name }}</h1>
+            <p class="text-muted">
+                <i class="fas fa-calendar me-1"></i> {{ class_obj.schedule }} | 
+                <i class="fas fa-user-graduate me-1"></i> {{ enrollments|length }} o'quvchi
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i> Asosiy panel
+            </a>
+            {% if sessions %}
+            <a href="{{ url_for('mark_attendance', session_id=sessions[0].id) }}" 
+               class="btn btn-primary">
+                <i class="fas fa-clipboard-check me-1"></i> Davomat belgilash
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-bolt me-2"></i> Tezkor amallar</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <a href="{{ url_for('teacher_add_session', class_id=class_obj.id) }}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-plus-circle me-1"></i> Yangi dars yaratish
+                                </a>
+                            </div>
+                        </div>
+                        {% if sessions %}
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <a href="{{ url_for('mark_attendance', session_id=sessions[0].id) }}" class="btn btn-success btn-lg">
+                                    <i class="fas fa-clipboard-check me-1"></i> Davomat belgilash
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-info btn-lg" onclick="exportAttendanceData()">
+                                    <i class="fas fa-file-export me-1"></i> Hisobot yaratish
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Session List with Attendance Records -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"><i class="fas fa-calendar-alt me-2"></i> Darslar</h5>
+                </div>
+                <div class="card-body">
+                    {% if sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Sana</th>
+                                    <th>Vaqt</th>
+                                    <th>Mavzu</th>
+                                    <th>Qatnashganlar</th>
+                                    <th>Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in sessions %}
+                                <tr>
+                                    <td>{{ session.date.strftime('%d.%m.%Y') }}</td>
+                                    <td>{{ session.start_time.strftime('%H:%M') }} - {{ session.end_time.strftime('%H:%M') }}</td>
+                                    <td>{{ session.topic or 'Mavzu belgilanmagan' }}</td>
+                                    <td>
+                                        {% set present_count = 0 %}
+                                        {% set total_count = 0 %}
+                                        
+                                        {% for record in session.attendance_records %}
+                                            {% if record.status == 'present' %}
+                                                {% set present_count = present_count + 1 %}
+                                            {% endif %}
+                                            {% set total_count = total_count + 1 %}
+                                        {% endfor %}
+                                        
+                                        <span class="badge {{ 'bg-success' if present_count > 0 else 'bg-secondary' }}">
+                                            {{ present_count }}/{{ total_count if total_count > 0 else enrollments|length }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('mark_attendance', session_id=session.id) }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-clipboard-check me-1"></i> Davomat belgilash
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Hali darslar mavjud emas. Yangi dars yaratish uchun yuqoridagi "Yangi dars yaratish" tugmasini bosing.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Student List -->
+    <div class="row" id="attendanceTable">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-users me-2"></i> O'quvchilar ro'yxati</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Search Controls -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="searchStudent" class="form-control" placeholder="O'quvchi nomini qidirish...">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if attendance_data %}
+                    <div class="table-responsive">
+                        <table id="attendanceDetailTable" class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>O'quvchi</th>
+                                    <th class="text-center">Qatnashdi</th>
+                                    <th class="text-center">Qatnashmadi</th>
+                                    <th class="text-center">Kechikdi</th>
+                                    <th class="text-center">Sababli</th>
+                                    <th>Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                {% for student_name, status_counts in attendance_data.items() %}
+                                <tr>
+                                    <td>{{ student_name }}</td>
+                                    <td class="text-center">{{ status_counts.present }}</td>
+                                    <td class="text-center">{{ status_counts.absent }}</td>
+                                    <td class="text-center">{{ status_counts.late }}</td>
+                                    <td class="text-center">{{ status_counts.excused }}</td>
+                                    <td>
+                                        {% for enrollment in enrollments %}
+                                            {% if enrollment.student.user.first_name ~ ' ' ~ enrollment.student.user.last_name == student_name %}
+                                                <a href="{{ url_for('student_comments', enrollment_id=enrollment.id) }}" class="btn btn-info btn-sm">
+                                                    <i class="fas fa-comment me-1"></i> Izoh qo'shish
+                                                </a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> O'quvchilar davomati haqida ma'lumot mavjud emas.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize search functionality
+        const searchInput = document.getElementById('searchStudent');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', filterStudents);
+        }
+        
+        function filterStudents() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const rows = document.querySelectorAll('#attendanceTableBody tr');
+            
+            rows.forEach(row => {
+                const studentName = row.querySelector('td:first-child').textContent.toLowerCase();
+                
+                if (studentName.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    });
+    
+    function exportAttendanceData() {
+        // Implement export functionality
+        alert('Ma\'lumotlar eksport qilinmoqda...');
+    }
+</script>
+{% endblock %}
+{% endblock %}
