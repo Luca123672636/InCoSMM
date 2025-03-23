@@ -1107,7 +1107,7 @@ def student_dashboard():
     perfect_attendance = True
     
     for enrollment in enrollments:
-        class_obj = enrollment.class_
+        class_obj = Class.query.get(enrollment.class_id)
         
         attendance_records = AttendanceRecord.query.filter_by(enrollment_id=enrollment.id).all()
         total_records = len(attendance_records)
@@ -1172,7 +1172,7 @@ def student_attendance():
     class_attendance = {}
     
     for enrollment in enrollments:
-        class_obj = enrollment.class_
+        class_obj = Class.query.get(enrollment.class_id)
         
         # Get attendance records for this enrollment
         records = db.session.query(AttendanceRecord, ClassSession).join(
@@ -1224,7 +1224,7 @@ def parent_dashboard():
         attendance_summary = []
         
         for enrollment in enrollments:
-            class_obj = enrollment.class_
+            class_obj = Class.query.get(enrollment.class_id)
             
             records = AttendanceRecord.query.filter_by(enrollment_id=enrollment.id).all()
             total_records = len(records)
@@ -1308,7 +1308,7 @@ def parent_student_view(student_id):
     class_attendance = {}
     
     for enrollment in enrollments:
-        class_obj = enrollment.class_
+        class_obj = Class.query.get(enrollment.class_id)
         
         # Get attendance records for this enrollment
         records = db.session.query(AttendanceRecord, ClassSession).join(
@@ -1458,7 +1458,7 @@ def api_student_attendance(student_id):
     class_data = []
     
     for enrollment in enrollments:
-        class_obj = enrollment.class_
+        class_obj = Class.query.get(enrollment.class_id)
         
         attendance = AttendanceRecord.query.filter_by(enrollment_id=enrollment.id).all()
         
